@@ -1,0 +1,89 @@
+version: "3.7"
+
+volumes:
+  database:
+  kafka:
+  bundle:
+  maven-repo:
+
+services:
+  db:
+    image: postgres:alpine
+    volumes:
+      - database:/var/lib/postgres/data
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka
+    ports:
+      - "9092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LOGS_DIR: /kafka/logs
+    volumes:
+      - kafka:/kafka/logs
+    depends_on:
+      - zookeeper
+
+  journey:
+    build:
+      context: ./journey
+    command: ["ruby", "app.rb"]
+    volumes:
+      - bundle:/usr/local/bundle
+      - ./journey:/app
+    depends_on:
+      - kafka
+    links:
+      - kafka
+
+  surveys:
+    build:
+      context: ./surveys
+    command: ["ruby", "app.rb"]
+    volumes:
+      - bundle:/usr/local/bundle
+      - ./surveys:/app
+    depends_on:
+      - kafka
+    links:
+      - kafka
+
+  scheduler:
+    build:
+      context: ./scheduler
+    command: ["ruby", "app.rb"]
+    volumes:
+      - bundle:/usr/local/bundle
+      - ./scheduler:/app
+    depends_on:
+      - kafka
+    links:
+      - kafka
+
+  quiz:
+    build:
+      context: ./quiz
+    command: ["ruby", "app.rb"]
+    volumes:
+      - bundle:/usr/local/bundle
+      - ./quiz:/app
+    depends_on:
+      - kafka
+    links:
+      - kafka
+
+  streamer:
+    build:
+      context: ./streamer
+    volumes:
+      - maven-repo:/root/.m2
+      - ./streamer:/app

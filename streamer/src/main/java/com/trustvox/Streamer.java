@@ -14,6 +14,8 @@ import java.util.Properties;
 
 public class Streamer {
     public static void main(final String[] args) throws Exception {
+        System.out.println("INITIALIZING STREAMER...");
+
         Properties props = new Properties();
 
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streamer");
